@@ -1,0 +1,7 @@
+**.terraform
+**.terraform.lock.hcl
+.env
+**.tfstate.**
+**.tfstate
+.env
+**.DS_Store
