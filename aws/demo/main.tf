@@ -16,3 +16,18 @@ module "ec2"  {
     ami = "ami-02c956980e9e063e5"
     depends_on = [ module.security_group ]
 }
+
+module "s3" {
+    source = "../s3"
+    bucket_name = "cloud-club-terraform-bucket"
+    public_access_block = false
+    enable_versioning = false
+    cors_policy = [
+        {
+            allowed_headers = ["*"]
+            allowed_methods = ["GET","POST","PUT"]
+            allowed_origins = ["*"]
+            expose_headers  = []
+        }
+    ]
+}
