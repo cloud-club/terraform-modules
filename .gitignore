@@ -5,3 +5,4 @@
 **.tfstate
 .env
 **.DS_Store
+.idea
