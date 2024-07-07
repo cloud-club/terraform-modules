@@ -1,7 +1,7 @@
 variable "config" {
   type = object({
-    name = string
+    name        = string
     description = optional(string)
-    value = string
+    value       = string
   })
 }
