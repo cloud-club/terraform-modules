@@ -1,4 +1,4 @@
 variable "issuer_url" {
-  type = string
+  type    = string
   default = "https://token.actions.githubusercontent.com"
 }

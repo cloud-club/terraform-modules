@@ -8,3 +8,43 @@ parameter_store:
     - name: /example/aws/parameter3
       private_key_path: private.pem
       value: orwRg85g5qKkpzX02TNoCq4/22Y08sGy2hpcRfiOThIc16dOQCZem4O+IfyzqBiMfh3UpDSRnY+5uli3y+YrM9PjIokVMNnSOstVlWJjAWrqWYWmaiAbcztarbcD98js7WJCUb6itQmJ9BfhAVC3WjlJvVJ7RJSx1jMZbvnIVt3Q3BKrCBrrKfTsZgp745fxho8FgYigccnyKoXG4NxF+YiQ4I9zqLUwfD5+LCcf49dvBe4H1YHOFk+qiQdaJ9J7oshexET+meNw7pn5KoGplsBOOW7fGTXabyNGmzNxr9QO3TNwh5tDgXC4iGYbDVM6i2I52SphVZ9gQx1WsI1Zmg==
+
+oidc:
+  - name: github
+    issuer_url: "https://token.actions.githubusercontent.com"
+
+ecr:
+  - name: demo
+  - name: demo2
+    scan_on_push: true
+  - name: demo3
+    scan_on_push: false
+    encryption_configuration:
+      encryption_type: KMS
+      kms_arn: arn:aws:kms:us-west-2:123456789012:key/12345678-1234-1234-1234-123456789012
+    tags:
+      Name: demo3
+      Environment: dev
+  - name: demo4
+    scan_on_push: false
+    encryption_configuration:
+      encryption_type: AES256
+
+eks:
+  - name: demo
+    version: "1.21"
+    irsa:
+      - name: demo
+        service_account_name: aws-sa
+        namespace: default
+        role_arn: arn:aws:iam::123456789012:role/demo-role
+        eks_issuer_url: https://oidc.eks.us-west-2.amazonaws.com/id/12345678901234567890
+        service_account:
+          name: aws-sa
+          namespace: default
+        tags:
+          Name: demo
+          Environment: dev
+    tags:
+      Name: demo
+      Environment: dev

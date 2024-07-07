@@ -1,31 +1,13 @@
-variable "name" {
-  type = string
-default = "aws-sa-role"
-}
-
-variable "policy_arns" {
-  type = list(string)
-  default = []
-}
-
-variable "cluster_name" {
-  type = string
-  default = "demo"
-}
-
-variable "eks_issuer_url" {
-  type = string
-  default = ""
-}
-
-variable "service_account" {
+variable "config" {
   type = object({
-    namespace = string
-    name      = string
+    name           = string
+    policy_arns    = optional(list(string))
+    cluster_name   = string
+    eks_issuer_url = string
+    service_account = object({
+      name      = string
+      namespace = string
+    })
+    tags = optional(map(string))
   })
-  default = {
-    namespace = "kube-system"
-    name      = "aws-sa"
-  }
 }
-
