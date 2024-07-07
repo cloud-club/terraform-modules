@@ -48,3 +48,92 @@ eks:
     tags:
       Name: demo
       Environment: dev
+
+vpc:
+  - name: demo
+    cidr_block: 10.0.0.0/16
+    region: ap-northeast-2
+    nat_gateway_info:
+      access: public
+      az: ["a"]
+    subnets:
+      - az: a
+        access: public
+        cidr_block: 10.0.100.0/24
+      - az: b
+        access: public
+        cidr_block: 10.0.101.0/24
+      - az: c
+        access: public
+        cidr_block: 10.0.102.0/24
+      - az: a
+        access: private
+        cidr_block: 10.0.0.0/24
+      - az: b
+        access: private
+        cidr_block: 10.0.1.0/24
+      - az: c
+        access: private
+        cidr_block: 10.0.2.0/24
+      - az: a
+        access: data
+        cidr_block: 10.0.10.0/24
+      - az: b
+        access: data
+        cidr_block: 10.0.11.0/24
+      - az: c
+        access: data
+        cidr_block: 10.0.12.0/24
+      - az: a
+        access: protected
+        cidr_block: 10.0.110.0/24
+      - az: b
+        access: protected
+        cidr_block: 10.0.111.0/24
+      - az: c
+        access: protected
+        cidr_block: 10.0.112.0/24
+    route_tables:
+      - access: public
+        route_table_assocations:
+          - subnet_az: a
+          - subnet_az: b
+          - subnet_az: c
+        route_table_routes:
+          - destination: 0.0.0.0/0
+            target_resource: internet_gateway
+      - access: private
+        route_table_assocations:
+          - subnet_az: a
+          - subnet_az: b
+          - subnet_az: c
+        route_table_routes:
+          - destination: 0.0.0.0/0
+            target_resource: nat_gateway
+            az: a
+    security_groups:
+      - name: demo
+        ingress_rules:
+          http:
+            ingress_from_port: 80
+            ingress_to_port: 80
+            ingress_protocol: tcp
+            cidr_blocks: ["0.0.0.0/0"]
+          https:
+            ingress_from_port: 443
+            ingress_to_port: 443
+            ingress_protocol: tcp
+            cidr_blocks: ["0.0.0.0/0"]
+          self_custom:
+            ingress_from_port: 0
+            ingress_to_port: 0
+            ingress_protocol: "-1"
+            self: true
+        egress_rules:
+          all:
+            egress_from_port: 0
+            egress_to_port: 0
+            egress_protocol: "-1"
+    tags:
+      Name: demo
+      Environment: dev

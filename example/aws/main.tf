@@ -7,6 +7,26 @@ locals {
       })
     ]
   ])
+  security_groups = flatten([
+    for vpc in local.config.vpc : [
+      for sg in vpc.security_groups : merge(sg, {
+        vpc_id = module.vpc[vpc.name].vpc_id
+      })
+    ]
+  ])
+}
+
+module "vpc" {
+  source = "../../aws/vpc"
+  for_each = { for vpc in local.config.vpc : vpc.name => vpc }
+  config = each.value
+}
+
+module "security_group" {
+  source = "../../aws/security-group"
+  for_each = { for sg in local.security_groups : sg.name => sg }
+  config = each.value
+  depends_on = [ module.vpc ]
 }
 
 
