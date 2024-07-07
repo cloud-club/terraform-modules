@@ -1,0 +1,10 @@
+parameter_store:
+  plain:
+    - name: /example/aws/parameter1
+      value: value1
+    - name: /example/aws/parameter2
+      value: value2
+  secure:
+    - name: /example/aws/parameter3
+      private_key_path: private.pem
+      value: orwRg85g5qKkpzX02TNoCq4/22Y08sGy2hpcRfiOThIc16dOQCZem4O+IfyzqBiMfh3UpDSRnY+5uli3y+YrM9PjIokVMNnSOstVlWJjAWrqWYWmaiAbcztarbcD98js7WJCUb6itQmJ9BfhAVC3WjlJvVJ7RJSx1jMZbvnIVt3Q3BKrCBrrKfTsZgp745fxho8FgYigccnyKoXG4NxF+YiQ4I9zqLUwfD5+LCcf49dvBe4H1YHOFk+qiQdaJ9J7oshexET+meNw7pn5KoGplsBOOW7fGTXabyNGmzNxr9QO3TNwh5tDgXC4iGYbDVM6i2I52SphVZ9gQx1WsI1Zmg==
