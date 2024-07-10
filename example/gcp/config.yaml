@@ -1,0 +1,32 @@
+vpc:
+  - name: demo
+    routing_mode: REGIONAL
+    subnets:
+      - name: public-1
+        region: us-central1
+        ip_cidr_range: 10.0.0.0/24
+      - name: public-2
+        region: us-central1
+        ip_cidr_range: 10.0.1.0/24
+      - name: public-3
+        region: us-central1
+        ip_cidr_range: 10.0.2.0/24
+  - name: demo2
+    routing_mode: REGIONAL
+    subnets:
+      - name: public-1
+        region: us-central1
+        ip_cidr_range: 10.0.0.0/24
+
+template_files:
+  - path: test.txt
+    vars:
+      key: Hello, World!
+    secrets:
+      pwd: secret
+  - path: backends.txt
+    vars:
+      port: 8080
+      ip_addrs: ["10.0.0.1", "10.0.0.2"]
+    # secrets:
+    #   pwd: secret
