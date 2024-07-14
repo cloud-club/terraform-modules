@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-setup-check
+  namespace: default
+  labels:
+    app: k8s-setup-check
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-setup-check
+  template:
+    metadata:
+      labels:
+        app: k8s-setup-check
+      annotations:
+        linkerd.io/inject: enabled
+    spec:
+      containers:
+        - name: k8s-setup-check
+          image: tae2089/k8s-check:1
+          resources:
+            limits:
+              memory: 15Mi
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: k8s-setup-check-config
+          volumeMounts:
+            - mountPath: "/usr/share/nginx/html"
+              name: pvc-demo-vol
+      volumes:
+        - name: pvc-demo-vol
+          persistentVolumeClaim:
+            claimName: pvc-demo
