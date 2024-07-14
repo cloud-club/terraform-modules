@@ -1,0 +1,32 @@
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: jaeger
+spec:
+  strategy: production
+  collector:
+    maxReplicas: 5
+    resources:
+      limits:
+        cpu: 100m
+        memory: 512Mi
+  storage:
+    type: elasticsearch
+    esIndexCleaner:
+      enabled: true
+      numberOfDays: 7
+      schedule: "55 23 * * *"
+    options:
+      es:
+        server-urls: http://elasticsearch-master.elasticsearch:9200
+        index-prefix: jaeger-tracing
+    secretName: jaeger-secret
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jaeger-secret
+type: Opaque
+data:
+  ES_PASSWORD: aa
+  ES_USERNAME: aa
