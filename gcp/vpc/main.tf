@@ -1,7 +1,6 @@
 resource "google_compute_network" "this" {
   name                            = var.config.name
   auto_create_subnetworks         = false
-  delete_default_routes_on_create = true
   routing_mode                    = var.config.routing_mode == null ? "REGIONAL" : var.config.routing_mode
 }
 
@@ -19,4 +18,27 @@ resource "google_compute_subnetwork" "this" {
       ip_cidr_range = secondary_ip_range.value.ip_cidr_range
     }
   }
+}
+
+resource "google_vpc_access_connector" "this" {
+  count         = var.config.connector == null ? 0 : 1
+  name          = "${var.config.name}-vpc-access-connector"
+  ip_cidr_range = var.config.connector.ip_cidr_range
+  network       = google_compute_network.this.self_link
+}
+
+resource "google_compute_router" "this" {
+  name    = "${var.config.name}-router"
+  network = google_compute_network.this.name
+  
+}
+
+resource "google_compute_router_nat" "this" {
+  name                               = "${var.config.name}-nat"
+  router                             = google_compute_router.this.name
+  region                             = google_compute_router.this.region
+  nat_ip_allocate_option             = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+
+  auto_network_tier="STANDARD"
 }
