@@ -3,30 +3,86 @@ vpc:
     routing_mode: REGIONAL
     subnets:
       - name: public-1
-        region: us-central1
+        region: asia-northeast3
         ip_cidr_range: 10.0.0.0/24
       - name: public-2
-        region: us-central1
+        region: asia-northeast3
         ip_cidr_range: 10.0.1.0/24
       - name: public-3
-        region: us-central1
+        region: asia-northeast3
         ip_cidr_range: 10.0.2.0/24
-  - name: demo2
-    routing_mode: REGIONAL
-    subnets:
-      - name: public-1
-        region: us-central1
-        ip_cidr_range: 10.0.0.0/24
+      - name: private-1
+        region: asia-northeast3
+        ip_cidr_range: 10.0.100.0/24
+        secondary_ip_ranges:
+          - range_name: pod
+            ip_cidr_range: 192.168.0.0/16
+          - range_name: service
+            ip_cidr_range: 172.16.0.0/16
+      - name: private-2
+        region: asia-northeast3
+        ip_cidr_range: 10.0.101.0/24
+      - name: private-3
+        region: asia-northeast3
+        ip_cidr_range: 10.0.102.0/24
+    firewall_rules:
+      - name: allow-ssh
+        direction: INGRESS
+        action: ALLOW
+        priority: 1000
 
-template_files:
-  - path: test.txt
-    vars:
-      key: Hello, World!
-    secrets:
-      pwd: secret
-  - path: backends.txt
-    vars:
-      port: 8080
-      ip_addrs: ["10.0.0.1", "10.0.0.2"]
-    # secrets:
-    #   pwd: secret
+firewall_rules:
+  - name: demo-iap
+    network_name: demo
+    ranges:
+      - "35.235.240.0/20"
+    allow:
+      - protocol: tcp
+        ports:
+          - 22
+  - name: demo-allow-health-check
+    network_name: demo
+    ranges:
+      - "130.211.0.0/22"
+      - "35.191.0.0/16"
+    allow:
+      - protocol: tcp
+
+loadbalancers:
+  - name: nginx-ingress
+    health_check:
+      port: 80
+      request_path: /healthz
+    ssl_name: nginx-ingress
+    backends:
+      - group: ingress-nginx-80-neg
+        zone: asia-northeast3-a
+      - group: ingress-nginx-80-neg
+        zone: asia-northeast3-b
+      - group: ingress-nginx-80-neg
+        zone: asia-northeast3-c
+
+ssl:
+  - name: nginx-ingress
+    domains:
+      - <domain.com>
+      - www.<domain.com>
+
+gke:
+  - name: demo
+    location: asia-northeast3
+    network_name: demo
+    subnetwork_name: private-1
+    master_ipv4_cidr_block: "10.255.255.0/28"
+    ip_allocation_policy:
+      cluster_secondary_range_name: pod
+      services_secondary_range_name: service
+    node_pools:
+      - name: spot
+        machine_type: n2d-standard-2
+        node_count: 1
+        disk_size_gb: 50
+        node_locations:
+          - asia-northeast3-a
+          - asia-northeast3-b
+          - asia-northeast3-c

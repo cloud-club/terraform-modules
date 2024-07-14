@@ -1,27 +1,33 @@
-locals {
-  config = yamldecode(file("config.yaml"))
-  templatefile_decryped_secrets ={for file in local.config.template_files : file.path => {
-    for key, value in  lookup(file, "secrets", {}) : key => sensitive(value)
-  } }
-  template_files = [for file in local.config.template_files : templatefile("assets/${file.path}", merge(file.vars, local.templatefile_decryped_secrets["${file.path}"]))]
-}
-
-
 module "vpc" {
-    for_each = { for vpc in local.config.vpc : vpc.name => vpc}
-  source = "../../gcp/vpc"
-  config = each.value
+  for_each = { for vpc in local.config.vpc : vpc.name => vpc }
+  source   = "../../gcp/vpc"
+  config   = each.value
 }
 
-output "template_files" {
-  value = local.template_files
-  sensitive = true
+module "firewall" {
+  for_each = { for rule in local.firewall_rules : rule.name => rule }
+  source   = "../../gcp/firewall"
+  config   = each.value
+  depends_on = [ module.vpc ]
 }
 
-output "vpc_ids" {
-  value = [for vpc in module.vpc : vpc.vpc_id]
+module "gke" {
+  for_each = { for gke in local.gke : gke.name => gke }
+  source   = "../../gcp/gke"
+  config   = each.value
+  depends_on = [ module.vpc, local.gke ]
 }
 
-output "subnets" {
-  value = [for vpc in module.vpc : vpc.subnets]
+
+module "ssl"{
+  for_each = { for ssl in local.config.ssl : ssl.name => ssl }
+  source   = "../../gcp/ssl"
+  config   = each.value
+}
+
+module "load_balancer" {
+  for_each = { for lb in local.loadbalancers : lb.name => lb }
+  source   = "../../gcp/loadbalancer"
+  config   = each.value
+  depends_on = [ module.vpc, module.gke]
 }
