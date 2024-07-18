@@ -162,3 +162,21 @@ spec:
       app.kubernetes.io/component: controller
       app.kubernetes.io/instance: nginx-ingress
       app.kubernetes.io/name: ingress-nginx
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/component: demo-server
+    app.kubernetes.io/name: k8s-check
+    app.kubernetes.io/version: 0.74.0
+  name: demo-server
+  namespace: default
+spec:
+  endpoints:
+    - honorLabels: true
+      port: http
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: k8s-setup-check

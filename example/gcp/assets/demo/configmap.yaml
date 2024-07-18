@@ -7,7 +7,7 @@ metadata:
     app: k8s-setup-check-config
 data:
   # BASE
-  GIN_MODE: "debug"
+  GIN_MODE: "release"
   ENVIRONMENT: "production"
   SERVICE_NAME: "demoservice"
   SERVICE_VERSION: "1.0"

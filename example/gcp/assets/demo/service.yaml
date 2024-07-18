@@ -1,11 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
+  labels:
+    app.kubernetes.io/name: k8s-setup-check
   name: k8s-setup-check-service
   namespace: default
 spec:
   selector:
-    app: k8s-setup-check
+    app.kubernetes.io/name: k8s-setup-check
   ports:
     - protocol: TCP
       name: http

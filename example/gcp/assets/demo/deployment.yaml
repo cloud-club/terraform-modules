@@ -4,22 +4,22 @@ metadata:
   name: k8s-setup-check
   namespace: default
   labels:
-    app: k8s-setup-check
+    app.kubernetes.io/name: k8s-setup-check
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: k8s-setup-check
+      app.kubernetes.io/name: k8s-setup-check
   template:
     metadata:
       labels:
-        app: k8s-setup-check
+        app.kubernetes.io/name: k8s-setup-check
       annotations:
         linkerd.io/inject: enabled
     spec:
       containers:
         - name: k8s-setup-check
-          image: tae2089/k8s-check:1
+          image: tae2089/k8s-check:4
           resources:
             limits:
               memory: 15Mi

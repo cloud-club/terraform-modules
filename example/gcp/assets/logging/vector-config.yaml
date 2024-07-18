@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector-config
+  namespace: monitoring
+data:
+  vector.yaml: |
+    data_dir: /var/lib/vector
+
+    sources:
+      kubernetes_logs:
+        type: kubernetes_logs
+        extra_label_selector: app.kubernetes.io/name=k8s-setup-check
+
+    transforms:
+      extract_trace:
+        type: remap
+        inputs:
+          - kubernetes_logs
+        source: |
+          .traceId = parse_json!(string!(.message)).traceId
+
+    sinks:
+      loki:
+        type: loki
+        inputs:
+          - extract_trace
+        endpoint: http://loki-loki-distributed-gateway
+        encoding:
+          codec: json
+          json:
+            pretty: true
+          only_fields:
+            - message
+        labels:
+          namespace: '{{kubernetes.pod_namespace}}'
+          pod: '{{kubernetes.pod_name}}'
+          container: '{{kubernetes.container_name}}'
+          traceId: '{{traceId}}'
