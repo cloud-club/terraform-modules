@@ -31,3 +31,10 @@ module "load_balancer" {
   config   = each.value
   depends_on = [ module.vpc, module.gke]
 }
+
+
+module "sa" {
+  for_each = { for sa in local.config.service_accounts : sa.account_id => sa }
+  source   = "../../gcp/service-account"
+  config   = each.value
+}
