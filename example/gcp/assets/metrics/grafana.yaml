@@ -618,25 +618,70 @@ plugins:
 ## Configure grafana datasources
 ## ref: http://docs.grafana.org/administration/provisioning/#datasources
 ##
-datasources: {}
-#  datasources.yaml:
-#    apiVersion: 1
-#    datasources:
-#    - name: Prometheus
-#      type: prometheus
-#      url: http://prometheus-prometheus-server
-#      access: proxy
-#      isDefault: true
-#    - name: CloudWatch
-#      type: cloudwatch
-#      access: proxy
-#      uid: cloudwatch
-#      editable: false
-#      jsonData:
-#        authType: default
-#        defaultRegion: us-east-1
-#    deleteDatasources: []
-#    - name: Prometheus
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus
+        url: http://prometheus-server:9090
+        access: proxy
+        isDefault: true
+        jsonData:
+          httpMethod: POST
+          manageAlerts: true
+          prometheusType: Prometheus
+          cacheLevel: "High"
+          exemplarTraceIdDestinations:
+            # Field with internal link pointing to data source in Grafana.
+            # datasourceUid value can be anything, but it should be unique across all defined data source uids.
+            - datasourceUid: tempo
+              name: tempo
+              labels: traceId
+      - name: loki
+        type: loki
+        uid: loki
+        url: http://loki-loki-distributed-gateway
+        access: proxy
+        editable: false
+        jsonData:
+          maxLines: 1000
+          derivedFields:
+            # Field with internal link pointing to data source in Grafana.
+            # datasourceUid value can be anything, but it should be unique across all defined data source uids.
+            - datasourceUid: tempo
+              # matcherRegex: "traceID=(\\w+)"
+              matcherType: label
+              matcherRegex: traceId
+              name: traceId
+              # url will be interpreted as query for the datasource
+              url: "$${__value.raw}"
+              # optional for URL Label to set a custom display label for the link.
+              urlDisplayLabel: "View Trace"
+      - name: tempo
+        type: tempo
+        uid: tempo
+        access: proxy
+        url: http://tempo:3100
+        jsonData:
+          tracesToLogsV2:
+            datasourceUid: "loki"
+            spanStartTimeShift: "-1h"
+            spanEndTimeShift: "1h"
+            tags: []
+            filterByTraceID: false
+            filterBySpanID: false
+            customQuery: true
+            query: '{traceId="$${__trace.traceId}"}'
+          tracesToMetrics:
+            datasourceUid: "prometheus"
+            spanStartTimeShift: "-1h"
+            spanEndTimeShift: "1h"
+            tags: []
+            queries:
+              - name: "memory_usage"
+                query: container_memory_usage_bytes{pod="$${__span.tags["host.name"]}"}
 
 ## Configure grafana alerting (can be templated)
 ## ref: http://docs.grafana.org/administration/provisioning/#alerting

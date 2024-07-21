@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: k8s-setup-check
-          image: tae2089/k8s-check:4
+          image: tae2089/k8s-check:8
           resources:
             limits:
               memory: 15Mi

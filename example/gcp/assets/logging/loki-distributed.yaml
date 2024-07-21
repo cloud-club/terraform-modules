@@ -68,12 +68,7 @@ loki:
     runAsNonRoot: true
     runAsUser: 10001
   # -- The SecurityContext for Loki containers
-  containerSecurityContext:
-    readOnlyRootFilesystem: true
-    capabilities:
-      drop:
-        - ALL
-    allowPrivilegeEscalation: false
+  containerSecurityContext: {}
   # -- Specify an existing secret containing loki configuration. If non-empty, overrides `loki.config`
   existingSecretForConfig: ""
   # -- Store the loki configuration as a secret.
@@ -229,26 +224,31 @@ loki:
   # -- Check https://grafana.com/docs/loki/latest/configuration/#schema_config for more info on how to configure schemas
   schemaConfig:
     configs:
-      - from: "2020-09-07"
-        store: boltdb-shipper
-        object_store: filesystem
-        schema: v11
+      - from: 2020-07-01
+        store: tsdb
+        object_store: gcs
+        schema: v13
         index:
-          prefix: loki_index_
+          prefix: index_
           period: 24h
 
   # -- Check https://grafana.com/docs/loki/latest/configuration/#storage_config for more info on how to configure storages
   storageConfig:
-    boltdb_shipper:
-      shared_store: filesystem
-      active_index_directory: /var/loki/index
-      cache_location: /var/loki/cache
-      cache_ttl: 168h
-    filesystem:
-      directory: /var/loki/chunks
-  # -- Uncomment to configure each storage individually
-  #   azure: {}
-  #   gcs: {}
+    tsdb_shipper:
+      active_index_directory: /loki/index
+      cache_location: /loki/index_cache
+      cache_ttl: 24h # Can be increased for faster performance over longer query periods, uses more disk space
+    gcs:
+      bucket_name: cc-demo-loki
+    # boltdb_shipper:
+    #   shared_store: filesystem
+    #   active_index_directory: /var/loki/index
+    #   cache_location: /var/loki/cache
+    #   cache_ttl: 168h
+    # filesystem:
+    #   directory: /var/loki/chunks
+    # -- Uncomment to configure each storage individually
+    #   azure: {}
   #   s3: {}
   #   boltdb: {}
 
@@ -269,7 +269,8 @@ serviceAccount:
   # -- Labels for the service account
   labels: {}
   # -- Annotations for the service account
-  annotations: {}
+  annotations:
+    iam.gke.io/gcp-service-account: gcs-list@lofty-stack-429211-b0.iam.gserviceaccount.com
   # -- Set this toggle to false to opt out of automounting API credentials for the service account
   automountServiceAccountToken: true
 
@@ -444,9 +445,12 @@ ingester:
   # -- Environment variables from secrets or configmaps to add to the ingester pods
   extraEnvFrom: []
   # -- Volume mounts to add to the ingester pods
-  extraVolumeMounts: []
-  # -- Volumes to add to the ingester pods
-  extraVolumes: []
+  extraVolumes:
+    - name: tsdb
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: tsdb
+      mountPath: /loki
   # -- Resource requests and limits for the ingester
   resources: {}
   # -- Containers to add to the ingester pods
@@ -512,10 +516,11 @@ ingester:
         #   If empty or set to null, no storageClassName spec is
         #   set, choosing the default provisioner (gp2 on AWS, standard on GKE, AWS, and OpenStack).
         storageClass: standard-rwo
-      # - name: wal
-      #   size: 150Gi
+      - name: wal
+        size: 30Gi
+        storageClass: standard-rwo
     # -- Enable StatefulSetAutoDeletePVC feature
-    enableStatefulSetAutoDeletePVC: false
+    enableStatefulSetAutoDeletePVC: true
     whenDeleted: Retain
     whenScaled: Retain
   # -- Adds the appProtocol field to the ingester service. This allows ingester to work with istio protocol selection.
@@ -682,9 +687,12 @@ querier:
   # -- Environment variables from secrets or configmaps to add to the querier pods
   extraEnvFrom: []
   # -- Volume mounts to add to the querier pods
-  extraVolumeMounts: []
-  # -- Volumes to add to the querier pods
-  extraVolumes: []
+  extraVolumes:
+    - name: tsdb
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: tsdb
+      mountPath: /loki
   # -- Resource requests and limits for the querier
   resources: {}
   # -- Containers to add to the querier pods

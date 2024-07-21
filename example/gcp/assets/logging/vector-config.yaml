@@ -33,7 +33,9 @@ data:
           only_fields:
             - message
         labels:
+          node: '{{kubernetes.pod_node_name}}'
           namespace: '{{kubernetes.pod_namespace}}'
           pod: '{{kubernetes.pod_name}}'
+          ip: '{{kubernetes.pod_ip}}'
           container: '{{kubernetes.container_name}}'
           traceId: '{{traceId}}'

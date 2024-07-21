@@ -86,3 +86,11 @@ gke:
           - asia-northeast3-a
           - asia-northeast3-b
           - asia-northeast3-c
+
+service_accounts:
+  - account_id: monitoring
+    is_workload_identity: true
+    iam_bindings:
+      - name: workload_identity_user
+        role: roles/iam.workloadIdentityUser
+        members: []

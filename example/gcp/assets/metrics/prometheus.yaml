@@ -7,6 +7,8 @@ metadata:
     app.kubernetes.io/name: prometheus-server
     app.kubernetes.io/version: 0.74.0
 spec:
+  enableFeatures:
+    - exemplar-storage
   replicas: 1
   enableAdminAPI: false
   evaluationInterval: 30s
