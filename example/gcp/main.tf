@@ -38,3 +38,9 @@ module "sa" {
   source   = "../../gcp/service-account"
   config   = each.value
 }
+
+module "gcs"{
+  for_each = { for gcs in local.config.gcs : gcs.name => gcs }
+  source   = "../../gcp/gcs"
+  config   = each.value
+}
