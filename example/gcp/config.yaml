@@ -94,3 +94,11 @@ service_accounts:
       - name: workload_identity_user
         role: roles/iam.workloadIdentityUser
         members: []
+
+gcs:
+  - name: cc-demo-2024
+    location: asia-northeast3
+    iam:
+      - name: cc-demo-attach-to-monitoring
+        role: roles/storage.objectAdmin
+        member: serviceAccount:monitoring@${PROJECT_ID}.iam.gserviceaccount.com
