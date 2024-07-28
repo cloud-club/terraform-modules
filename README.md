@@ -15,7 +15,13 @@
 
 ### gcp
 
-none
+- vpc
+- firewall
+- ssl
+- service account
+- gcs
+- load balancer for https
+- gke
 
 ### azure
 
