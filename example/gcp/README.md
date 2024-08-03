@@ -2,6 +2,11 @@
 
 ## Infra 생성하기
 
+0. placeholder 채우기
+
+  - example/gcp/config.tf 의 "project-id" 는 gcp 에서 확인한 자신의 project id 로 교체 (e.g., myproject-a1b2c)
+  - gcp/config.yaml 의 ${PROJECT_ID} 를 위와 동일한 값으로 교체
+
 1. terraform apply 하기
 
 ```sh
@@ -47,16 +52,24 @@ helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 ```sh
 helm upgrade --install -f ./assets/ingress/ingress-nginx-values.yaml nginx-ingress ingress-nginx/ingress-nginx -n nginx-ingress --create-namespace
 ```
-
+ 
 ## Gke NEG 사용하기
 
-1. neetwork endpoint groups 조회하기
+1. network endpoint groups 조회하기
 
 ```sh
 gcloud compute network-endpoint-groups list
 ```
 
-2. terraform을 활용해서 main.tf에 loadbalancer 부분 주석 해제하기
+2. placeholder 채우기
+
+  - example/gcp/config.yaml 의 domains 에 서브도메인 입력하기 (e.g., example.your-domain.com, grafana.your-domain.com)
+  - assets/demo/ingress.yaml 에 서브 도메인 입력하기 (e.g., example.your-domain.com)
+
+3. terraform을 활용해서 main.tf에 loadbalancer 부분 주석 해제하기
+
+> [!NOTE]  
+> 웹 콘솔로 접속 - [Cloud DNS](https://console.cloud.google.com/net-services/dns/zones) - 구매한 도메인 이름으로 Zone 등록 - NS 레코드에 있는 값들을 도메인 구입했던 사이트에 가서 입력 (네임서버 교체) - 다시 Cloud DNS 로 돌아와서, A 레코드로 서브 도메인 등록 (example.your-domain.com, grafana.your-domain.com 의 2개를 권장) - A 레코드의 target ip 는 'nginx-ingress-forwarding-rule' 항목으로 연결
 
 ## 참고자료
 
@@ -71,6 +84,13 @@ gcloud compute network-endpoint-groups list
 ### grafana 설치하기
 
 ### Prometheus Operator 설치하기
+
+0. helm chart 설치하기
+
+```sh
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts     
+helm repo update
+```
 
 1. node-exporter 설치하기
 
@@ -104,7 +124,7 @@ kubectl apply -f assets/metrics/clusterrole-binding.yaml
 curl -L https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.74.0/stripped-down-crds.yaml | kubectl apply --server-side -f -
 ```
 
-6. Pro,etheus Operator 설치하기
+6. Prometheus Operator 설치하기
 
 ```sh
 kubectl apply -f assets/metrics/operator.yaml
@@ -125,6 +145,13 @@ kubectl apply -f assets/metrics/servicemonitor.yaml
 ## Tracing
 
 ### tempo 사용해보기
+
+0. helm chart 설치하기
+
+```sh
+helm repo add grafana https://grafana.github.io/helm-charts                   
+helm repo update
+```
 
 1. helm 설치하기
 
