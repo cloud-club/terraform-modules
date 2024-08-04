@@ -218,3 +218,55 @@ helm upgrade -i -n monitoring fluentd fluent/fluentd -f assets/logging/fluentd.y
 # Service Mesh
 
 ## Istio
+
+## linkerd
+
+1. step-cli를 활용해서 tls 인증서 발급하기 및 secrets 등록하기
+
+```sh
+step certificate create root.linkerd.cluster.local control_plane_ca.crt control_plane_ca.key --profile root-ca --no-password --insecure &&
+kubectl create secret tls linkerd-trust-anchor --cert=control_plane_ca.crt --key=control_plane_ca.key --namespace=linkerd
+
+step certificate create webhook.linkerd.cluster.local webhook_ca.crt webhook_ca.key --profile root-ca --no-password --insecure --san webhook.linkerd.cluster.local &&
+kubectl create secret tls webhook-issuer-tls --cert=webhook_ca.crt --key=webhook_ca.key --namespace=linkerd &&
+kubectl create secret tls webhook-issuer-tls --cert=webhook_ca.crt --key=webhook_ca.key --namespace=linkerd-viz
+```
+
+2. cert-manager를 활용해서 issuer와 certificate 생성하기
+3. helm 추가하기
+
+```sh
+helm repo add linkerd https://helm.linkerd.io/edge
+```
+
+4. crd 설치하기
+
+```sh
+helm install linkerd-crds -n linkerd linkerd/linkerd-crds --set enableHttpRoutes=false
+```
+
+5. control plane 설치하기
+
+```sh
+kubectl label namespace linkerd \
+  linkerd.io/is-control-plane=true \
+  config.linkerd.io/admission-webhooks=disabled \
+  linkerd.io/control-plane-ns=linkerd
+kubectl annotate namespace linkerd linkerd.io/inject=disabled
+
+helm upgrade -i -n linkerd linkerd-control-plane -f assets/service-mesh/linkerd/control-plane.values.yaml linkerd/linkerd-control-plane
+```
+
+6. viz 설치하기
+
+```sh
+helm upgrade -i -n linkerd linkerd-viz -f assets/service-mesh/linkerd/viz.values.yaml linkerd/linkerd-viz
+```
+
+7. emojivoto 설치하기
+
+```sh
+kubectl apply -f assets/service-mesh/linkerd/emojivoto.yaml
+```
+
+8.
