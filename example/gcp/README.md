@@ -4,8 +4,8 @@
 
 0. placeholder 채우기
 
-  - example/gcp/config.tf 의 "project-id" 는 gcp 에서 확인한 자신의 project id 로 교체 (e.g., myproject-a1b2c)
-  - gcp/config.yaml 의 ${PROJECT_ID} 를 위와 동일한 값으로 교체
+- example/gcp/config.tf 의 "project-id" 는 gcp 에서 확인한 자신의 project id 로 교체 (e.g., myproject-a1b2c)
+- gcp/config.yaml 의 ${PROJECT_ID} 를 위와 동일한 값으로 교체
 
 1. terraform apply 하기
 
@@ -52,7 +52,7 @@ helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 ```sh
 helm upgrade --install -f ./assets/ingress/ingress-nginx-values.yaml nginx-ingress ingress-nginx/ingress-nginx -n nginx-ingress --create-namespace
 ```
- 
+
 ## Gke NEG 사용하기
 
 1. network endpoint groups 조회하기
@@ -63,8 +63,8 @@ gcloud compute network-endpoint-groups list
 
 2. placeholder 채우기
 
-  - example/gcp/config.yaml 의 domains 에 서브도메인 입력하기 (e.g., example.your-domain.com, grafana.your-domain.com)
-  - assets/demo/ingress.yaml 에 서브 도메인 입력하기 (e.g., example.your-domain.com)
+- example/gcp/config.yaml 의 domains 에 서브도메인 입력하기 (e.g., example.your-domain.com, grafana.your-domain.com)
+- assets/demo/ingress.yaml 에 서브 도메인 입력하기 (e.g., example.your-domain.com)
 
 3. terraform을 활용해서 main.tf에 loadbalancer 부분 주석 해제하기
 
@@ -88,7 +88,7 @@ gcloud compute network-endpoint-groups list
 0. helm chart 설치하기
 
 ```sh
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts     
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 ```
 
@@ -149,7 +149,7 @@ kubectl apply -f assets/metrics/servicemonitor.yaml
 0. helm chart 설치하기
 
 ```sh
-helm repo add grafana https://grafana.github.io/helm-charts                   
+helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update
 ```
 
@@ -268,5 +268,3 @@ helm upgrade -i -n linkerd linkerd-viz -f assets/service-mesh/linkerd/viz.values
 ```sh
 kubectl apply -f assets/service-mesh/linkerd/emojivoto.yaml
 ```
-
-8.
