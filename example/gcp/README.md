@@ -268,3 +268,61 @@ helm upgrade -i -n linkerd linkerd-viz -f assets/service-mesh/linkerd/viz.values
 ```sh
 kubectl apply -f assets/service-mesh/linkerd/emojivoto.yaml
 ```
+
+## Consul
+
+## helm 설치
+
+1. hashcorp helm repo 추가
+```bash
+helm repo add hashicorp https://helm.releases.hashicorp.com
+```
+
+2. consul 설치
+
+```bash
+helm install --values values.yaml consul hashicorp/consul --create-namespace --namespace consul --version "1.0.0"
+```
+
+3. 서비스 확인
+```bash
+kubectl get svc -n consul
+
+# NAME                        TYPE           CLUSTER-IP       EXTERNAL-IP     PORT(S)                                                                   AGE
+# consul-connect-injector     ClusterIP      172.16.57.50     <none>          443/TCP                                                                   72s
+# consul-controller-webhook   ClusterIP      172.16.228.123   <none>          443/TCP                                                                   72s
+# consul-dns                  ClusterIP      172.16.154.166   <none>          53/TCP,53/UDP                                                             72s
+# consul-server               ClusterIP      None             <none>          8500/TCP,8301/TCP,8301/UDP,8302/TCP,8302/UDP,8300/TCP,8600/TCP,8600/UDP   72s
+# consul-ui                   LoadBalancer   172.16.24.195    PUBLIC_IP       80:30092/TCP                                                              72s
+```
+
+4. consul-ui 확인
+- https://PUBLIC_IP 
+
+5. 차트 삭제
+```bash
+helm uninstall consul --namespace consul
+```
+
+### l7 observability
+1. git clone
+```bash
+git clone https://github.com/hashicorp/learn-consul-kubernetes.git && \
+    cd learn-consul-kubernetes/layer7-observability && \
+    git checkout tags/v0.0.15
+```
+
+2. helm으로 설치
+```bash
+helm install --values helm/consul-values.yaml consul hashicorp/consul --create-namespace --namespace consul --version "0.43.0"
+```
+
+3. prometheus 배포
+```bash
+helm install -f helm/prometheus-values.yaml prometheus prometheus-community/prometheus --version "15.5.3" --wait
+```
+
+4. grafana 배포
+```bash
+helm install -f helm/grafana-values.yaml grafana grafana/grafana --version "6.23.1" --wait
+```
