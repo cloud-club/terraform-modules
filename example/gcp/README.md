@@ -219,6 +219,12 @@ helm upgrade -i -n monitoring fluentd fluent/fluentd -f assets/logging/fluentd.y
 
 ## Istio
 
+
+
+
+istio-legacy example (TODO - remove)
+- https://github.com/Floodnut/service-mesh/tree/main/istio
+
 ## linkerd
 
 1. step-cli를 활용해서 tls 인증서 발급하기 및 secrets 등록하기
