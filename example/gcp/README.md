@@ -319,6 +319,15 @@ helm install \
     kiali/kiali-server
 ```
 
+11. demo application
+```sh
+kubectl create ns bookinfo istio-injection=enabled
+
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.23/samples/bookinfo/platform/kube/bookinfo.yaml -n bookinfo
+```
+
+![kiali-graph-1](./statics/kiali-graph-1.png)
+
 ## linkerd
 
 1. step-cli를 활용해서 tls 인증서 발급하기 및 secrets 등록하기
