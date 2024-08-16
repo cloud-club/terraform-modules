@@ -24,7 +24,7 @@ gcloud auth application-default login
 2. cluster gredentials 발급받기
 
 ```sh
- gcloud container clusters get-credentials demo --region asia-northeast3
+gcloud container clusters get-credentials demo --region asia-northeast3
 ```
 
 3. kubectl 명령어 입력해보기
@@ -278,6 +278,11 @@ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.23/samp
 
 # if you use cni
 helm install istiod istio/istiod -n istio-system --set pilot.cni.enabled=true --wait
+```
+
+```sh
+# prometheus addon
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/addons/prometheus.yaml -n istio-system
 ```
 
 6. Check `istiod` Service
