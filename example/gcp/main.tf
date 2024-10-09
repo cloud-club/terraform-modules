@@ -25,22 +25,23 @@ module "ssl"{
   config   = each.value
 }
 
-module "load_balancer" {
-  for_each = { for lb in local.loadbalancers : lb.name => lb }
-  source   = "../../gcp/loadbalancer"
-  config   = each.value
-  depends_on = [ module.vpc, module.gke]
-}
+# module "load_balancer" {
+#   for_each = { for lb in local.loadbalancers : lb.name => lb }
+#   source   = "../../gcp/loadbalancer"
+#   config   = each.value
+#   depends_on = [ module.vpc, module.gke]
+# }
 
 
 module "sa" {
   for_each = { for sa in local.config.service_accounts : sa.account_id => sa }
   source   = "../../gcp/service-account"
   config   = each.value
+  project_id = local.project_id
 }
 
-module "gcs"{
-  for_each = { for gcs in local.config.gcs : gcs.name => gcs }
-  source   = "../../gcp/gcs"
-  config   = each.value
-}
+# module "gcs"{
+#   for_each = { for gcs in local.config.gcs : gcs.name => gcs }
+#   source   = "../../gcp/gcs"
+#   config   = each.value
+# }

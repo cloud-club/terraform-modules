@@ -7,7 +7,22 @@
 - example/gcp/config.tf 의 "project-id" 는 gcp 에서 확인한 자신의 project id 로 교체 (e.g., myproject-a1b2c)
 - gcp/config.yaml 의 ${PROJECT_ID} 를 위와 동일한 값으로 교체
 
-1. terraform apply 하기
+1. gcp service enable 하기
+
+```sh
+gcloud auth login
+gcloud projects list # project list 확인
+gcloud config set project <GCP PROJECT ID># project id 설정
+
+# service enable 하기
+gcloud services enable compute.googleapis.com
+gcloud services enable container.googleapis.com
+gcloud services enable networkservices.googleapis.com
+gcloud services enable  certificatemanager.googleapis.com
+
+```
+
+2. terraform apply 하기
 
 ```sh
 terraform apply --auto-approve
@@ -70,6 +85,16 @@ gcloud compute network-endpoint-groups list
 
 > [!NOTE]  
 > 웹 콘솔로 접속 - [Cloud DNS](https://console.cloud.google.com/net-services/dns/zones) - 구매한 도메인 이름으로 Zone 등록 - NS 레코드에 있는 값들을 도메인 구입했던 사이트에 가서 입력 (네임서버 교체) - 다시 Cloud DNS 로 돌아와서, A 레코드로 서브 도메인 등록 (example.your-domain.com, grafana.your-domain.com 의 2개를 권장) - A 레코드의 target ip 는 'nginx-ingress-forwarding-rule' 항목으로 연결
+
+4. neg 삭제 방법 - 해당 부분은 terraform 삭제 이후, neg가 남아 있을떄 사용해주세요.
+
+```sh
+gcloud compute network-endpoint-groups delete ingress-nginx-80-neg --zone=asia-northeast3-a
+
+gcloud compute network-endpoint-groups delete ingress-nginx-80-neg --zone=asia-northeast3-b
+
+gcloud compute network-endpoint-groups delete ingress-nginx-80-neg --zone=asia-northeast3-c
+```
 
 ## 참고자료
 
@@ -217,9 +242,10 @@ helm upgrade -i -n monitoring fluentd fluent/fluentd -f assets/logging/fluentd.y
 
 # Service Mesh
 
-
 ## Istio
+
 1. helm repo
+
 ```sh
 helm repo add istio https://istio-release.storage.googleapis.com/charts
 helm repo add kiali https://kiali.org/helm-charts
@@ -230,6 +256,7 @@ helm repo update
 ```
 
 2. istio
+
 ```sh
 kubectl create namespace istio-system
 helm install istio-base istio/base -n istio-system --set defaultRevision=default
@@ -240,16 +267,19 @@ helm get all istio-base -n istio-system
 ```
 
 3. check istio-namespace with helm
+
 ```sh
 helm ls -n istio-system
 
 # Example
 # NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
-# istio-base      istio-system    1               2024-08-13 00:45:30.5764 +0900 KST      deployed        base-1.22.3     1.22.3  
+# istio-base      istio-system    1               2024-08-13 00:45:30.5764 +0900 KST      deployed        base-1.22.3     1.22.3
 ```
 
 4. CNI for istio (if needed)
+
 - https://istio.io/latest/docs/setup/additional-setup/cni/#installing-with-helm
+
 ```sh
 # Install istio-cni node agent via helm or operator.
 
@@ -270,6 +300,7 @@ istioctl install -f istio-cni.yaml -y
 ```
 
 5. install istiod-service with helm
+
 ```sh
 helm install istiod istio/istiod -n istio-system --set values.meshConfig.defaultConfig.tracing.zipkin.address="tempo.monitoring.svc.cluster.local:9411" --wait
 
@@ -286,22 +317,26 @@ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samp
 ```
 
 6. Check `istiod` Service
+
 ```sh
 kubectl get deployments -n istio-system --output wide
 ```
 
 7. (Optional) If you want to install ingress-gateway
+
 ```sh
 kubectl create namespace istio-ingress
 helm install istio-ingress istio/gateway -n istio-ingress --wait
 ```
 
 8. istio injection
+
 ```sh
-kubectl label namespace default istio-injection=enabled   
+kubectl label namespace default istio-injection=enabled
 ```
 
 9. install istio-ingressgwateway
+
 ```sh
 kubectl create namespace istio-ingress
 helm install istio-ingressgateway istio/gateway -n istio-ingress --wait
@@ -309,6 +344,7 @@ helm install istio-ingress istio/gateway -n istio-system --wait
 ```
 
 10. install kiali
+
 ```sh
 helm install \
     --namespace istio-system \
@@ -320,6 +356,7 @@ helm install \
 ```
 
 11. demo application
+
 ```sh
 kubectl create ns bookinfo istio-injection=enabled
 
@@ -383,6 +420,7 @@ kubectl apply -f assets/service-mesh/linkerd/emojivoto.yaml
 ## helm 설치
 
 1. hashcorp helm repo 추가
+
 ```bash
 helm repo add hashicorp https://helm.releases.hashicorp.com
 ```
@@ -394,6 +432,7 @@ helm install --values values.yaml consul hashicorp/consul --create-namespace --n
 ```
 
 3. 서비스 확인
+
 ```bash
 kubectl get svc -n consul
 
@@ -406,15 +445,19 @@ kubectl get svc -n consul
 ```
 
 4. consul-ui 확인
-- https://PUBLIC_IP 
+
+- https://PUBLIC_IP
 
 5. 차트 삭제
+
 ```bash
 helm uninstall consul --namespace consul
 ```
 
 ### l7 observability
+
 1. git clone
+
 ```bash
 git clone https://github.com/hashicorp/learn-consul-kubernetes.git && \
     cd learn-consul-kubernetes/layer7-observability && \
@@ -422,16 +465,19 @@ git clone https://github.com/hashicorp/learn-consul-kubernetes.git && \
 ```
 
 2. helm으로 설치
+
 ```bash
 helm install --values helm/consul-values.yaml consul hashicorp/consul --create-namespace --namespace consul --version "0.43.0"
 ```
 
 3. prometheus 배포
+
 ```bash
 helm install -f helm/prometheus-values.yaml prometheus prometheus-community/prometheus --version "15.5.3" --wait
 ```
 
 4. grafana 배포
+
 ```bash
 helm install -f helm/grafana-values.yaml grafana grafana/grafana --version "6.23.1" --wait
 ```

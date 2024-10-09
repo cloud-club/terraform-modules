@@ -4,7 +4,7 @@ data "google_client_config" "this" {}
 resource "google_compute_target_https_proxy" "this" {
   name             = "${var.config.name}-proxy"
   url_map          = google_compute_url_map.this.id
-  ssl_certificates = [var.config.ssl_id]
+  certificate_map = "//certificatemanager.googleapis.com/${var.config.ssl_id}"
 }
 
 resource "google_compute_url_map" "this" {

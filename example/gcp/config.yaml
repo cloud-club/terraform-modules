@@ -2,16 +2,16 @@ vpc:
   - name: demo
     routing_mode: REGIONAL
     subnets:
-      - name: public-1
-        region: asia-northeast3
-        ip_cidr_range: 10.0.0.0/24
-      - name: public-2
-        region: asia-northeast3
-        ip_cidr_range: 10.0.1.0/24
-      - name: public-3
-        region: asia-northeast3
-        ip_cidr_range: 10.0.2.0/24
-      - name: private-1
+      # - name: public-a
+      #   region: asia-northeast3
+      #   ip_cidr_range: 10.0.0.0/24
+      # - name: public-b
+      #   region: asia-northeast3
+      #   ip_cidr_range: 10.0.1.0/24
+      # - name: public-c
+      #   region: asia-northeast3
+      #   ip_cidr_range: 10.0.2.0/24
+      - name: private-subnet-01
         region: asia-northeast3
         ip_cidr_range: 10.0.100.0/24
         secondary_ip_ranges:
@@ -19,17 +19,12 @@ vpc:
             ip_cidr_range: 192.168.0.0/16
           - range_name: service
             ip_cidr_range: 172.16.0.0/16
-      - name: private-2
-        region: asia-northeast3
-        ip_cidr_range: 10.0.101.0/24
-      - name: private-3
-        region: asia-northeast3
-        ip_cidr_range: 10.0.102.0/24
-    firewall_rules:
-      - name: allow-ssh
-        direction: INGRESS
-        action: ALLOW
-        priority: 1000
+      # - name: private-b
+      #   region: asia-northeast3
+      #   ip_cidr_range: 10.0.101.0/24
+      # - name: private-c
+      #   region: asia-northeast3
+      #   ip_cidr_range: 10.0.102.0/24
 
 firewall_rules:
   - name: demo-iap
@@ -64,15 +59,20 @@ loadbalancers:
 
 ssl:
   - name: nginx-ingress
-    domains:
-      - <domain.com>
-      - www.<domain.com>
+    managed_zone: println-kr
+    dns_authorizations:
+      []
+      # - name: example-com
+      #   domain: example.com
+      #   use_wildcard: true
+      # - name: www-example-com
+      #   domain: "www.example.com"
 
 gke:
   - name: demo
     location: asia-northeast3
     network_name: demo
-    subnetwork_name: private-1
+    subnetwork_name: private-subnet-01
     master_ipv4_cidr_block: "10.255.255.0/28"
     ip_allocation_policy:
       cluster_secondary_range_name: pod
@@ -89,16 +89,29 @@ gke:
 
 service_accounts:
   - account_id: monitoring
-    is_workload_identity: true
-    iam_bindings:
-      - name: workload_identity_user
-        role: roles/iam.workloadIdentityUser
-        members: []
-
-gcs:
-  - name: cc-demo-2024
-    location: asia-northeast3
-    iam:
-      - name: cc-demo-attach-to-monitoring
+    workflow_identity:
+      enable: false
+    iam_binding:
+      - name: storage-object-admin
         role: roles/storage.objectAdmin
-        member: serviceAccount:monitoring@${PROJECT_ID}.iam.gserviceaccount.com
+  - account_id: external-dns
+    workflow_identity:
+      enable: true
+      service_account: external-dns
+      namespace: kube-system
+    iam_binding:
+      - name: external-dns-admin
+        role: roles/dns.admin
+# gcs:
+#   - name: cc-demo-loki-2024
+#     location: asia-northeast3
+#     iam:
+#       - name: cc-demo-attach-to-monitoring
+#         role: roles/storage.objectAdmin
+#         member: serviceAccount:monitoring@${PROJECT_ID}.iam.gserviceaccount.com
+#   - name: cc-demo-tempo-2024
+#     location: asia-northeast3
+#     iam:
+#       - name: cc-demo-attach-to-monitoring
+#         role: roles/storage.objectAdmin
+#         member: serviceAccount:monitoring@${PROJECT_ID}.iam.gserviceaccount.com

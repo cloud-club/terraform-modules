@@ -1,11 +1,19 @@
 variable "config" {
   type = object({
     account_id = string
-    is_workload_identity = optional(bool, false)
+    workflow_identity = object({
+      enable = optional(bool, false)
+      service_account = optional(string, "")
+      namespace = optional(string, "")
+    })
     iam_binding = optional(list(object({
         name    = string
         role    = string
-        members = list(string)
     })),[])
   })
+}
+
+
+variable "project_id" {
+  type = string
 }

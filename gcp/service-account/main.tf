@@ -3,18 +3,18 @@ resource "google_service_account" "this" {
 }
 
 // https://cloud.google.com/iam/docs/reference/rest/v1/Policy#Binding
-resource "google_service_account_iam_binding" "this" {
+resource "google_project_iam_member" "this" {
   for_each = {for role in var.config.iam_binding : role.name => role}
-  service_account_id = google_service_account.this.name
+  project = var.project_id
   role               = each.value.role
-  members = each.value.members
+  member = "serviceAccount:${google_service_account.this.email}" 
   depends_on = [ google_service_account.this ]
 }
 
 resource "google_service_account_iam_binding" "workflow_identity" {
-  count = var.config.is_workload_identity ? 1 : 0
+  count = var.config.workflow_identity.enable ? 1 : 0
   service_account_id = google_service_account.this.name
   role               = "roles/iam.workloadIdentityUser"
-  members = ["serviceAccount:${google_service_account.this.email}" ]
+  members = ["serviceAccount:${var.project_id}.svc.id.goog[${var.config.workflow_identity.namespace}/${var.config.workflow_identity.service_account}]"]
   depends_on = [ google_service_account.this ]
 }

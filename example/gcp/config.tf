@@ -4,11 +4,8 @@ provider "google" {
 }
 
 locals {
+  project_id = "project-id"
   config = yamldecode(file("config.yaml"))
-  # templatefile_decryped_secrets ={for file in local.config.template_files : file.path => {
-  #   for key, value in  lookup(file, "secrets", {}) : key => sensitive(value)
-  # } }
-  # template_files = [for file in local.config.template_files : templatefile("assets/${file.path}", merge(file.vars, local.templatefile_decryped_secrets["${file.path}"]))]
   gke = [for gke in local.config.gke :
     merge(gke,
       {
