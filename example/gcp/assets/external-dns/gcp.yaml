@@ -4,7 +4,7 @@ metadata:
   name: external-dns
   namespace: kube-system
   annotations:
-    iam.gke.io/gcp-service-account: <INSERT GCP SERVICE ACCOUNT>
+    iam.gke.io/gcp-service-account: external-dns@<PROJECT_ID>.iam.gserviceaccount.com
   labels:
     app.kubernetes.io/name: external-dns
 ---

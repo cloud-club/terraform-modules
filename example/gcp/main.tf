@@ -19,11 +19,11 @@ module "gke" {
 }
 
 
-module "ssl"{
-  for_each = { for ssl in local.config.ssl : ssl.name => ssl }
-  source   = "../../gcp/ssl"
-  config   = each.value
-}
+# module "ssl"{
+#   for_each = { for ssl in local.config.ssl : ssl.name => ssl }
+#   source   = "../../gcp/ssl"
+#   config   = each.value
+# }
 
 # module "load_balancer" {
 #   for_each = { for lb in local.loadbalancers : lb.name => lb }
@@ -33,12 +33,12 @@ module "ssl"{
 # }
 
 
-module "sa" {
-  for_each = { for sa in local.config.service_accounts : sa.account_id => sa }
-  source   = "../../gcp/service-account"
-  config   = each.value
-  project_id = local.project_id
-}
+# module "sa" {
+#   for_each = { for sa in local.config.service_accounts : sa.account_id => sa }
+#   source   = "../../gcp/service-account"
+#   config   = each.value
+#   project_id = local.project_id
+# }
 
 # module "gcs"{
 #   for_each = { for gcs in local.config.gcs : gcs.name => gcs }

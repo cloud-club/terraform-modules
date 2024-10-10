@@ -1,10 +1,10 @@
 provider "google" {
-  project = "project-id"
+  project = "<PROJECT_ID>"
   region  = "asia-northeast3"
 }
 
 locals {
-  project_id = "project-id"
+  project_id = "<PROJECT_ID>"
   config = yamldecode(file("config.yaml"))
   gke = [for gke in local.config.gke :
     merge(gke,
@@ -19,10 +19,10 @@ locals {
         network = module.vpc["${rule.network_name}"].name
       }
   )]
-  loadbalancers = [for lb in local.config.loadbalancers :
-    merge(lb,
-      {
-        ssl_id = module.ssl["${lb.ssl_name}"].id
-      }
-  )]
+  # loadbalancers = [for lb in local.config.loadbalancers :
+  #   merge(lb,
+  #     {
+  #       ssl_id = module.ssl["${lb.ssl_name}"].id
+  #     }
+  # )]
 }
