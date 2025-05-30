@@ -1,0 +1,11 @@
+apiVersion: elbv2.k8s.aws/v1beta1
+kind: TargetGroupBinding
+metadata:
+  name: ${name}
+  namespace: ${namespace}
+spec:
+  serviceRef:
+    name: ${ingress_service}
+    port: ${port}
+  targetType: instance
+  targetGroupARN: ${target_group_arn}

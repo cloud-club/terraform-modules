@@ -1,0 +1,139 @@
+{
+  "Statement": [
+    {
+      "Action": [
+        "pricing:GetProducts",
+        "kms:*",
+        "ec2:RunInstances",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeSpotPriceHistory",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeLaunchTemplates",
+        "ec2:DescribeInstances",
+        "ec2:DescribeInstanceTypes",
+        "ec2:DescribeInstanceTypeOfferings",
+        "ec2:DescribeImages",
+        "ec2:DescribeAvailabilityZones",
+        "ec2:CreateTags",
+        "ec2:CreateLaunchTemplate",
+        "ec2:CreateFleet"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    },
+    {
+      "Action": ["ec2:TerminateInstances", "ec2:DeleteLaunchTemplate"],
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/kubernetes.io/cluster/${cluster_name}": "owned"
+        }
+      },
+      "Effect": "Allow",
+      "Resource": "*"
+    },
+    {
+      "Action": "ec2:RunInstances",
+      "Condition": {
+        "StringEquals": {
+          "ec2:ResourceTag/karpenter.sh/discovery": "${cluster_name}"
+        }
+      },
+      "Effect": "Allow",
+      "Resource": "arn:aws:ec2:*:${acccount_id}:launch-template/*"
+    },
+    {
+      "Action": "ec2:RunInstances",
+      "Effect": "Allow",
+      "Resource": [
+        "arn:aws:ec2:*::snapshot/*",
+        "arn:aws:ec2:*::image/*",
+        "arn:aws:ec2:*:${acccount_id}:volume/*",
+        "arn:aws:ec2:*:${acccount_id}:subnet/*",
+        "arn:aws:ec2:*:${acccount_id}:spot-instances-request/*",
+        "arn:aws:ec2:*:${acccount_id}:security-group/*",
+        "arn:aws:ec2:*:${acccount_id}:network-interface/*",
+        "arn:aws:ec2:*:${acccount_id}:instance/*"
+      ]
+    },
+    {
+      "Action": "ssm:GetParameter",
+      "Effect": "Allow",
+      "Resource": "arn:aws:ssm:*:*:parameter/aws/service/*"
+    },
+    {
+      "Action": "eks:DescribeCluster",
+      "Effect": "Allow",
+      "Resource": "arn:aws:eks:*:${acccount_id}:cluster/${cluster_name}"
+    },
+    {
+      "Action": "iam:PassRole",
+      "Effect": "Allow",
+      "Resource": "arn:aws:iam::${acccount_id}:role/${karpenter_node_role_name}"
+    },
+    {
+      "Action": [
+        "sqs:ReceiveMessage",
+        "sqs:GetQueueUrl",
+        "sqs:GetQueueAttributes",
+        "sqs:DeleteMessage"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:sqs:${region}:${acccount_id}:${cluster_name}-karpenter-queue"
+    },
+    {
+      "Action": "iam:CreateInstanceProfile",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/kubernetes.io/cluster/${cluster_name}": "owned",
+          "aws:RequestTag/topology.kubernetes.io/region": "${region}"
+        },
+        "StringLike": {
+          "aws:RequestTag/karpenter.k8s.aws/ec2nodeclass": "*"
+        }
+      },
+      "Effect": "Allow",
+      "Resource": "*"
+    },
+    {
+      "Action": "iam:TagInstanceProfile",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/kubernetes.io/cluster/${cluster_name}": "owned",
+          "aws:RequestTag/topology.kubernetes.io/region": "${region}",
+          "aws:ResourceTag/kubernetes.io/cluster/${cluster_name}": "owned",
+          "aws:ResourceTag/topology.kubernetes.io/region": "${region}"
+        },
+        "StringLike": {
+          "aws:RequestTag/karpenter.k8s.aws/ec2nodeclass": "*",
+          "aws:ResourceTag/karpenter.k8s.aws/ec2nodeclass": "*"
+        }
+      },
+      "Effect": "Allow",
+      "Resource": "*"
+    },
+    {
+      "Action": [
+        "iam:RemoveRoleFromInstanceProfile",
+        "iam:DeleteInstanceProfile",
+        "iam:AddRoleToInstanceProfile"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/kubernetes.io/cluster/${cluster_name}": "owned",
+          "aws:ResourceTag/topology.kubernetes.io/region": "${region}"
+        },
+        "StringLike": {
+          "aws:ResourceTag/karpenter.k8s.aws/ec2nodeclass": "*"
+        }
+      },
+      "Effect": "Allow",
+      "Resource": "*"
+    },
+    {
+      "Action": "iam:GetInstanceProfile",
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ],
+  "Version": "2012-10-17"
+}

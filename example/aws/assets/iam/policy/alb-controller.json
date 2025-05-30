@@ -1,0 +1,59 @@
+{
+  "Statement": [
+    {
+      "Action": "iam:CreateServiceLinkedRole",
+      "Condition": {
+        "StringEquals": {
+          "iam:AWSServiceName": "elasticloadbalancing.amazonaws.com"
+        }
+      },
+      "Effect": "Allow",
+      "Resource": "*"
+    },
+    {
+      "Action": [
+        "iam:ListServerCertificates",
+        "iam:GetServerCertificate",
+        "elasticloadbalancing:DescribeTargetHealth",
+        "elasticloadbalancing:DescribeTargetGroups",
+        "elasticloadbalancing:DescribeTargetGroupAttributes",
+        "elasticloadbalancing:DescribeTags",
+        "elasticloadbalancing:DescribeSSLPolicies",
+        "elasticloadbalancing:DescribeRules",
+        "elasticloadbalancing:DescribeLoadBalancers",
+        "elasticloadbalancing:DescribeLoadBalancerAttributes",
+        "elasticloadbalancing:DescribeListeners",
+        "elasticloadbalancing:DescribeListenerCertificates",
+        "ec2:RevokeSecurityGroupIngress",
+        "ec2:GetCoipPoolUsage",
+        "ec2:DescribeVpcs",
+        "ec2:DescribeVpcPeeringConnections",
+        "ec2:DescribeTags",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeNetworkInterfaces",
+        "ec2:DescribeInternetGateways",
+        "ec2:DescribeInstances",
+        "ec2:DescribeCoipPools",
+        "ec2:DescribeAvailabilityZones",
+        "ec2:DescribeAddresses",
+        "ec2:DescribeAccountAttributes",
+        "ec2:CreateSecurityGroup",
+        "ec2:AuthorizeSecurityGroupIngress",
+        "acm:ListCertificates",
+        "acm:DescribeCertificate"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    },
+    {
+      "Action": [
+        "elasticloadbalancing:RegisterTargets",
+        "elasticloadbalancing:DeregisterTargets"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:elasticloadbalancing:*:${acccount_id}:targetgroup/*/*"
+    }
+  ],
+  "Version": "2012-10-17"
+}

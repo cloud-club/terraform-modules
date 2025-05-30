@@ -1,0 +1,16 @@
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: ${role_arn}
+webhook:
+  enabled: true
+settings:
+  aws:
+    defaultInstanceProfile: ${instance_profile}
+  clusterEndpoint: ${cluster_endpoint}
+  clusterName: ${cluster_name}
+  interruptionQueue: ${interruption_queue}
+controller:
+  resources:
+    memory: 1Gi
+  limits:
+    memory: 1Gi
