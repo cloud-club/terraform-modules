@@ -1,0 +1,46 @@
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: ${node_pool_name}
+spec:
+  disruption:
+    consolidateAfter: Never
+    consolidationPolicy: ${consolidation_policy}
+    budgets:
+    - duration: 18h
+      nodes: "0"
+      schedule: 0 21 * * mon-fri
+  limits: {}
+  template:
+    metadata:
+      annotations: {}
+      labels:
+        kubernetes.io/os: linux
+        role: ${node_pool_name}
+    spec:
+      expireAfter: Never
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: ${node_class_name}
+      requirements:
+        - key: karpenter.k8s.aws/instance-family
+          operator: In
+          values:
+%{ for family in instance_family ~}
+            - ${family}
+%{ endfor ~}
+        - key: karpenter.k8s.aws/instance-size
+          operator: In
+          values:
+%{ for size in instance_size~}
+            - ${size}
+%{ endfor ~} 
+        - key: "karpenter.sh/capacity-type"
+          operator: In
+          values:
+%{ for capacity in instance_capacity~}
+            - ${capacity}
+%{ endfor ~}
+  weight: 1
+  

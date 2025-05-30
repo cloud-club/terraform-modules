@@ -1,0 +1,58 @@
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: ${node_class_name}
+spec:
+  amiFamily: ${ami_family}
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: ${eks_name}
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: ${eks_name}
+  role: ${karpenter_node_role_arn}
+  amiSelectorTerms:
+    - id: ${ami}
+  kubelet:
+    systemReserved:
+      cpu: 100m
+      memory: 100Mi
+      ephemeral-storage: 1Gi
+    kubeReserved:
+      cpu: 200m
+      memory: 100Mi
+      ephemeral-storage: 2Gi
+    evictionHard:
+      memory.available: 5%
+      nodefs.available: 10%
+      nodefs.inodesFree: 10%
+    evictionSoft:
+      memory.available: 10%
+      nodefs.available: 15%
+      nodefs.inodesFree: 15%
+    evictionSoftGracePeriod:
+      memory.available: 1m
+      nodefs.available: 1m30s
+      nodefs.inodesFree: 2m
+    evictionMaxPodGracePeriod: 60
+    imageGCHighThresholdPercent: 85
+    imageGCLowThresholdPercent: 80
+    cpuCFSQuota: true
+  tags:
+    Name: ${tag_name}
+  metadataOptions:
+    httpEndpoint: enabled
+    httpProtocolIPv6: disabled
+    httpPutResponseHopLimit: 2
+    httpTokens: required
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 100Gi
+        volumeType: gp2
+        iops: 3000
+        encrypted: true
+        deleteOnTermination: true
+        throughput: 125
+  detailedMonitoring: true
+  associatePublicIPAddress: false
