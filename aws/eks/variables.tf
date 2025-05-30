@@ -36,39 +36,7 @@ variable "config" {
           }))
         }))
       }), null)
-    })),
-    [
-    {
-      name = "kube-proxy"
-    },
-    {
-      name = "vpc-cni"
-    },
-    {
-      name = "coredns"
-      config = {
-        computeType = "Fargate"
-        replicaCount = 2
-        resources = {
-          requests = {
-            cpu = "100m"
-            memory = "256Mi"
-          }
-          limits = {
-            cpu = "250m"
-            memory = "512Mi"
-          }
-        }
-      }
-    },
-    # {
-    #   name = "aws-ebs-csi-driver"
-    # },
-    {
-      name = "eks-pod-identity-agent"
-    }
-    ]
-    )
+    })),[])
     karpenter_node_role_name = string
     subnet_ids = list(string)
   })

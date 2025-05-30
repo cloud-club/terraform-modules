@@ -44,10 +44,31 @@ eks:
         role_name: S3-Access-Role
         service_account_namespace: default
         service_account_name: demo
+      - name: Demo-Cluster-EBS-CSI-Driver-Role
+        role_name: Demo-Cluster-EBS-CSI-Driver-Role
+        service_account_namespace: kube-system
+        service_account_name: ebs-csi-controller-sa
     access_entries:
       - name: Demo-Cluster-Karpenter-Node-Role
         role_name: Demo-Cluster-Karpenter-Node-Role
         type: "EC2_LINUX"
+    addons:
+      - name: kube-proxy
+      - name: vpc-cni
+      - name: coredns
+        config:
+          computeType: Fargate
+          replicaCount: 2
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "250m"
+              memory: "512Mi"
+      - name: aws-ebs-csi-driver
+        service_account_role_arn: arn:aws:iam::123456789012:role/EKS-EBS-CSI-Driver-Role
+      - name: eks-pod-identity-agent
     tags:
       Name: demo
       Environment: dev
@@ -93,6 +114,10 @@ roles:
     assume_role_policy_file: assets/iam/role/assume-eks-pod-identity.json
     policy_arns:
       - "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+  - name: Demo-Cluster-EBS-CSI-Driver-Role
+    assume_role_policy_file: assets/iam/role/assume-eks-pod-identity.json
+    policy_arns:
+      - "arn:aws:iam::aws:policy/AmazonEBSReadOnlyAccess"
 
 vpc:
   - name: demo
