@@ -117,7 +117,7 @@ roles:
   - name: Demo-Cluster-EBS-CSI-Driver-Role
     assume_role_policy_file: assets/iam/role/assume-eks-pod-identity.json
     policy_arns:
-      - "arn:aws:iam::aws:policy/AmazonEBSReadOnlyAccess"
+      - "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 
 vpc:
   - name: demo
