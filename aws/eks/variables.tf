@@ -1,117 +1,75 @@
-variable "cluster_name" {
-    description = "EKS 클러스터 이름"
-    type        = string
-}
-
-variable "k8s_cluster_version" {
-    description = "EKS 클러스터 버전"
-    type        = string
-}
-
-
-variable "public_access_cidrs" {
-    description = "EKS 클러스터 퍼블릭 엑세스 CIDR"
-    type        = list(string)
-    default = [  ]
-}
-
-
-variable "security_group_ids" {
-    description = "EKS cluster vpc security config"
-    type = list(string)
-    default = [  ]
-}
-
-variable "private_subnets" {
-    description = "EKS cluster vpc private subnets"
-    type = list(string)
-    default = [  ]
-}
-
-variable "node_specs" {
-    description = "node group specs for eks cluster"
-    type = list(object({
-        name = string
-        instance_types = list(string)
-        volume_size = number
-        desired_size = number
-        min_size = number
-        max_size = number
-    }))
-    default = [
-        {
-            name = "t3.large"
-            instance_types = ["t3.large"]
-            volume_size = 50
-            desired_size = 3
-            min_size = 3
-            max_size = 3
+variable "config" {
+  type = object({
+    name        = string
+    version = string
+    vpc_id              = string
+    alb_security_group_id = string
+    access_entries = optional(list(object({
+      name              = string
+      principal_arn     = string
+      kubernetes_groups = optional(list(string))
+      type              = string
+    })), [])
+    access_cidrs = optional(list(string), ["0.0.0.0/0"])
+    eks_cluster_role_arn = string
+    eks_fargate_role_arn = string
+    pod_identity_roles = optional(list(object({
+      name                      = string
+      role_arn                  = string
+      service_account_namespace = string
+      service_account_name      = string
+    })), [])
+    addons = optional(list(object({
+      name                     = string
+      service_account_role_arn = optional(string)
+      config = optional(object({
+        replicaCount = optional(number, null)
+        computeType  = optional(string),
+        resources = optional(object({
+          limits = optional(object({
+            cpu    = optional(string),
+            memory = optional(string),
+          }))
+          requests = optional(object({
+            cpu    = optional(string),
+            memory = optional(string),
+          }))
+        }))
+      }), null)
+    })),
+    [
+    {
+      name = "kube-proxy"
+    },
+    {
+      name = "vpc-cni"
+    },
+    {
+      name = "coredns"
+      config = {
+        computeType = "Fargate"
+        replicaCount = 2
+        resources = {
+          requests = {
+            cpu = "100m"
+            memory = "256Mi"
+          }
+          limits = {
+            cpu = "250m"
+            memory = "512Mi"
+          }
         }
+      }
+    },
+    # {
+    #   name = "aws-ebs-csi-driver"
+    # },
+    {
+      name = "eks-pod-identity-agent"
+    }
     ]
-}
-
-variable "eks_cluster_role_policys" {
-    description = "eks cluster role policy arns"
-    type = list(object({
-        name= string
-        arn = string
-    }))
-    default = [
-        {
-            name = "AmazonEKSClusterPolicy"
-            arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-        },
-        {
-            name = "AmazonEKSVPCResourceController"
-            arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
-        }
-    ]
-}
-
-variable "node_role_policys" {
-    description = "node role policy arns"
-    type = list(object({
-        name= string
-        arn = string
-    }))
-    default = [
-        {
-            name = "AmazonEKSWorkerNodePolicy"
-            arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-        },
-        {
-            name = "AmazonSSMManagedInstanceCore"
-            arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-        },
-        {
-            name = "AmazonEKS_CNI_Policy"
-            arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-        },
-        {
-            name = "AmazonEC2ContainerRegistryReadOnly"
-            arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-        }
-    ]
-}
-
-
-variable "addons" {
-  type = list(object({
-    name = string
-    version = optional(string)
-  }))
-    default = [
-        {
-        name = "kube-proxy"
-        },
-        {
-        name = "vpc-cni"
-        },
-        {
-        name = "coredns"
-        },
-        {
-        name = "aws-ebs-csi-driver"
-        }
-    ]
+    )
+    karpenter_node_role_name = string
+    subnet_ids = list(string)
+  })
 }

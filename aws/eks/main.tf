@@ -1,124 +1,258 @@
+locals {
+  sqs_events = {
+    health_event = {
+      name        = "HealthEvent"
+      description = "Karpenter interrupt - AWS health event"
+      event_pattern = {
+        source      = ["aws.health"]
+        detail-type = ["AWS Health Event"]
+      }
+    }
+    spot_interrupt = {
+      name        = "SpotInterrupt"
+      description = "Karpenter interrupt - EC2 spot instance interruption warning"
+      event_pattern = {
+        source      = ["aws.ec2"]
+        detail-type = ["EC2 Spot Instance Interruption Warning"]
+      }
+    }
+    instance_rebalance = {
+      name        = "InstanceRebalance"
+      description = "Karpenter interrupt - EC2 instance rebalance recommendation"
+      event_pattern = {
+        source      = ["aws.ec2"]
+        detail-type = ["EC2 Instance Rebalance Recommendation"]
+      }
+    }
+    instance_state_change = {
+      name        = "InstanceStateChange"
+      description = "Karpenter interrupt - EC2 instance state-change notification"
+      event_pattern = {
+        source      = ["aws.ec2"]
+        detail-type = ["EC2 Instance State-change Notification"]
+      }
+    }
+  }
+
+}
+
 resource "aws_cloudwatch_log_group" "this" {
-    name              = "/aws/eks/${var.cluster_name}/cluster"
-    retention_in_days = 7
+  name              = "/aws/eks/${var.config.name}"
+  retention_in_days = 7
 }
 
 # 클러스터 기본 설정
 resource "aws_eks_cluster" "this" {
-    name                      = var.cluster_name
-    role_arn                  = aws_iam_role.this.arn
-    version                   = var.k8s_cluster_version
-    enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+  name                      = var.config.name
+  role_arn                  = var.config.eks_cluster_role_arn
+  version                   = var.config.version
+  enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+  access_config {
+    authentication_mode                         = "API"
+    bootstrap_cluster_creator_admin_permissions = true
+  }
+  #클러스터 네트워크 설정
+  vpc_config {
+    
+    security_group_ids      = [aws_security_group.eks.id]
+    subnet_ids              = var.config.subnet_ids
+    endpoint_private_access = true
+    endpoint_public_access  = true
+    public_access_cidrs     = var.config.access_cidrs
+  }
 
-    #클러스터 네트워크 설정
-    vpc_config {
-        security_group_ids      = var.security_group_ids
-        subnet_ids              = module.vpc.private_subnets
-        endpoint_private_access = true
-        endpoint_public_access  = true
-        public_access_cidrs     = var.public_access_cidrs
-    }
-
-    depends_on = [
-        aws_iam_role_policy_attachment.eks,
-        aws_cloudwatch_log_group.this,
-        module.vpc
-    ]
+  depends_on = [
+    aws_cloudwatch_log_group.this,
+  ]
 }
 
-resource "aws_eks_addon" "addons" {
-    for_each     = { for addon in var.addons : addon.name => addon }
-    cluster_name = aws_eks_cluster.this.name
-    addon_name   = each.value.name
-
-    resolve_conflicts_on_create = "OVERWRITE"
-    resolve_conflicts_on_update = "PRESERVE"
-    depends_on = [
-        aws_eks_cluster.this,
-        aws_eks_node_group.this
-    ]
+resource "aws_eks_access_entry" "this" {
+  for_each          = { for entry in var.config.access_entries : entry.name => entry }
+  cluster_name      = aws_eks_cluster.this.name
+  principal_arn     = each.value.principal_arn
+  type              = each.value.type
+  kubernetes_groups = each.value.kubernetes_groups
+  depends_on = [
+    aws_eks_cluster.this
+  ]
 }
 
-resource "aws_iam_role" "eks" {
-    name = var.cluster_name
-    assume_role_policy = data.aws_iam_policy_document.eks.json
+# EKS Addons
+data "aws_eks_addon_version" "this" {
+  for_each = { for addon in var.config.addons : addon.name => addon }
+
+  addon_name         = each.value.name
+  kubernetes_version = aws_eks_cluster.this.version
+  most_recent        = true
 }
 
-data "aws_iam_policy_document" "eks" {
-    statement {
-        actions = ["sts:AssumeRole"]
-        effect  = "Allow"
-        principals {
-            type        = "Service"
-            identifiers = ["eks.amazonaws.com"]
-        }
-    }
+resource "aws_eks_addon" "this" {
+  for_each = { for addon in var.config.addons : addon.name => addon }
+
+  cluster_name = aws_eks_cluster.this.name
+  addon_name   = try(each.value.name, each.key)
+
+  addon_version               = try(each.value.version, data.aws_eks_addon_version.this[each.key].version)
+  configuration_values        = each.value.config != null ? jsonencode(each.value.config) : null
+  service_account_role_arn    = each.value.service_account_role_arn != null ? each.value.service_account_role_arn : null
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+  depends_on = [
+    aws_eks_cluster.this
+  ]
 }
 
-resource "aws_iam_role_policy_attachment" "eks" {
-    for_each = { for policy in var.eks_cluster_role_policys : policy.name => policy }
-    policy_arn = each.value.arn
-    role       = aws_iam_role.eks.name
-}
+# 클러스터 파게이트 프로필
+resource "aws_eks_fargate_profile" "this" {
+  cluster_name           = aws_eks_cluster.this.name
+  fargate_profile_name   = "Fargate"
+  pod_execution_role_arn = var.config.eks_fargate_role_arn
+  subnet_ids             = var.config.subnet_ids
+  selector {
+    namespace = "karpenter"
+  }
 
-resource "aws_iam_role" "node" {
-    name = "${var.cluster_name}-node"
-    assume_role_policy = data.aws_iam_policy_document.node.json
-}
-
-data "aws_iam_policy_document" "node" {
-    statement {
-        actions = ["sts:AssumeRole"]
-        effect  = "Allow"
-        principals {
-            type        = "Service"
-            identifiers = ["ec2.amazonaws.com"]
-        }
-    }
-}
-
-resource "aws_iam_role_policy_attachment" "node" {
-    for_each = { for policy in var.node_role_policys : policy => policy }
-    policy_arn = each.value.arn
-    role       = aws_iam_role.node.name
-}
-
-resource "aws_autoscaling_group_tag" "this" {
-    for_each = { for spec in var.node_specs : spec.name => spec }
-    autoscaling_group_name = aws_eks_node_group.this[each.value.name].resources[0].autoscaling_groups[0].name
-    tag {
-        key                 = "Name"
-        value               = "${var.cluster_name}-node"
-        propagate_at_launch = true
-    }
-}
-
-resource "aws_eks_node_group" "this" {
-    for_each = { for spec in var.node_specs : spec.name => spec }
-    cluster_name    = var.cluster_name
-    node_group_name = "${var.cluster_name}-node"
-    node_role_arn   = aws_iam_role.node.arn
-    subnet_ids      = var.private_subnets
-    instance_types  = each.value.instance_types
-    disk_size       = each.value.volume_size
-
+  selector {
+    namespace = "kube-system"
     labels = {
-        "role" = "${var.cluster_name}-node"
+      "k8s-app" : "kube-dns"
     }
+  }
 
-    scaling_config {
-        desired_size = each.value.desired_size
-        min_size     =  each.value.min_size
-        max_size     =  each.value.max_size
+  selector {
+    namespace = "kube-system"
+    labels = {
+      "app.kubernetes.io/name" : "aws-load-balancer-controller"
     }
+  }
 
-    depends_on = [
-        aws_iam_role_policy_attachment.node,
-        aws_eks_cluster.this
+  lifecycle {
+    ignore_changes = [
+      subnet_ids
     ]
+  }
+  depends_on = [
+    aws_eks_cluster.this
+  ]
+}
+resource "aws_eks_pod_identity_association" "this" {
+  for_each        = { for role in var.config.pod_identity_roles : role.name => role }
+  cluster_name    = aws_eks_cluster.this.name
+  namespace       = each.value.service_account_namespace
+  service_account = each.value.service_account_name
+  role_arn        = each.value.role_arn
+  depends_on = [
+    aws_eks_cluster.this
+  ]
+}
 
-    tags = {
-        "Name"  = "${var.cluster_name}-node",
-        "Names" = "${var.cluster_name}-node"
+resource "aws_iam_instance_profile" "karpenter_instance_profile" {
+  name = "${var.config.name}-karpenter-profile"
+  role = var.config.karpenter_node_role_name
+}
+
+data "tls_certificate" "eks_oidc" {
+  url = aws_eks_cluster.this.identity[0].oidc[0].issuer
+}
+
+resource "aws_iam_openid_connect_provider" "this" {
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.eks_oidc.certificates[0].sha1_fingerprint]
+  url             = aws_eks_cluster.this.identity[0].oidc[0].issuer
+}
+
+# SQS
+resource "aws_sqs_queue" "sqs_queue" {
+  name                      = "${var.config.name}-karpenter-queue"
+  message_retention_seconds = 300
+}
+
+data "aws_iam_policy_document" "sqs_queue_policy" {
+  statement {
+    sid       = "SqsWrite"
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.sqs_queue.arn]
+
+    principals {
+      type = "Service"
+      identifiers = [
+        "events.amazonaws.com",
+        "sqs.amazonaws.com",
+      ]
     }
+  }
+}
+
+resource "aws_sqs_queue_policy" "sqs_queue_policy" {
+  queue_url = aws_sqs_queue.sqs_queue.url
+  policy    = data.aws_iam_policy_document.sqs_queue_policy.json
+}
+
+resource "aws_cloudwatch_event_rule" "cloudwatch_event_rule" {
+  for_each = { for k, v in local.sqs_events : k => v }
+
+  name_prefix   = "Karpenter-${each.value.name}-"
+  description   = each.value.description
+  event_pattern = jsonencode(each.value.event_pattern)
+}
+
+resource "aws_cloudwatch_event_target" "cloudwatch_event_target" {
+  for_each = { for k, v in local.sqs_events : k => v }
+
+  rule      = aws_cloudwatch_event_rule.cloudwatch_event_rule[each.key].name
+  target_id = "KarpenterInterruptionQueueTarget"
+  arn       = aws_sqs_queue.sqs_queue.arn
+}
+
+
+# Security group
+resource "aws_security_group" "eks" {
+  name        = "${var.config.name}-sg"
+  description = "Security group for ${var.config.name}"
+  vpc_id      = var.config.vpc_id
+
+  tags = {
+    "karpenter.sh/discovery" = var.config.name
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_security_group_rule" "master_eks_ingress" {
+  type                     = "ingress"
+  from_port                = 0
+  to_port                  = 0
+  protocol                 = "-1"
+  source_security_group_id = aws_security_group.eks.id
+  security_group_id        = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+}
+
+resource "aws_security_group_rule" "eks_self_ingress" {
+  type              = "ingress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  self              = true
+  security_group_id = aws_security_group.eks.id
+}
+
+resource "aws_security_group_rule" "eks_ingress" {
+  type                     = "ingress"
+  from_port                = 0
+  to_port                  = 0
+  protocol                 = "-1"
+  source_security_group_id = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+  security_group_id        = aws_security_group.eks.id
+}
+
+resource "aws_security_group_rule" "nginx_ingress"{
+  for_each = { 30080 = "TCP", 30443 = "TCP" }
+  type                     = "ingress"
+  from_port                = each.key
+  to_port                  = each.key
+  protocol                 = each.value
+  source_security_group_id = var.config.alb_security_group_id
+  security_group_id        = aws_security_group.eks.id
 }
