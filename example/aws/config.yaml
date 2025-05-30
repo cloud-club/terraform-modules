@@ -31,23 +31,68 @@ ecr:
       encryption_type: AES256
 
 eks:
-  - name: demo
-    version: "1.21"
-    irsa:
-      - name: demo
-        service_account_name: aws-sa
-        namespace: default
-        role_arn: arn:aws:iam::123456789012:role/demo-role
-        eks_issuer_url: https://oidc.eks.us-west-2.amazonaws.com/id/12345678901234567890
-        service_account:
-          name: aws-sa
-          namespace: default
-        tags:
-          Name: demo
-          Environment: dev
+  - name: demo-cluster
+    vpc: demo
+    version: "1.32"
+    alb_security_group_name: alb-sg
+    subnet_names: ["demo-private-a", "demo-private-b", "demo-private-c"]
+    eks_cluster_role_name: Demo-Cluster-Controller-Role
+    eks_fargate_role_name: Demo-Cluster-Fargate-Role
+    karpenter_node_role_name: Demo-Cluster-Karpenter-Node-Role
+    pod_identity_roles:
+      - name: S3-Access-Role
+        role_name: S3-Access-Role
+        service_account_namespace: default
+        service_account_name: demo
+    access_entries:
+      - name: Demo-Cluster-Karpenter-Node-Role
+        role_name: Demo-Cluster-Karpenter-Node-Role
+        type: "EC2_LINUX"
     tags:
       Name: demo
       Environment: dev
+irsa:
+  - name: Demo-Cluster-Karpenter-Controller-Role
+    eks_name: demo-cluster
+    service_account:
+      name: karpenter
+      namespace: karpenter
+    inline_policies:
+      - name: karpenter-controller
+        policy_file: assets/iam/policy/karpenter-controller.json
+    policy_arns:
+      - "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+      - "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
+  - name: Demo-Cluster-Alb-Controller-Role
+    eks_name: demo-cluster
+    service_account:
+      name: aws-load-balancer-controller
+      namespace: kube-system
+    inline_policies:
+      - name: alb-controller
+        policy_file: assets/iam/policy/alb-controller.json
+roles:
+  - name: Demo-Cluster-Controller-Role
+    assume_role_policy_file: assets/iam/role/assume-eks-controller.json
+    policy_arns:
+      - "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+      - "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
+  - name: Demo-Cluster-Karpenter-Node-Role
+    assume_role_policy_file: assets/iam/role/assume-eks-node.json
+    policy_arns:
+      - "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+      - "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+      - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+      - "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+  - name: Demo-Cluster-Fargate-Role
+    assume_role_policy_file: assets/iam/role/assume-eks-fargate.json
+    policy_arns:
+      - "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+      - "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
+  - name: S3-Access-Role
+    assume_role_policy_file: assets/iam/role/assume-eks-pod-identity.json
+    policy_arns:
+      - "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
 
 vpc:
   - name: demo
@@ -69,30 +114,18 @@ vpc:
       - az: a
         access: private
         cidr_block: 10.0.0.0/24
+        tags:
+          karpenter.sh/discovery: demo-cluster
       - az: b
         access: private
         cidr_block: 10.0.1.0/24
+        tags:
+          karpenter.sh/discovery: demo-cluster
       - az: c
         access: private
         cidr_block: 10.0.2.0/24
-      - az: a
-        access: data
-        cidr_block: 10.0.10.0/24
-      - az: b
-        access: data
-        cidr_block: 10.0.11.0/24
-      - az: c
-        access: data
-        cidr_block: 10.0.12.0/24
-      - az: a
-        access: protected
-        cidr_block: 10.0.110.0/24
-      - az: b
-        access: protected
-        cidr_block: 10.0.111.0/24
-      - az: c
-        access: protected
-        cidr_block: 10.0.112.0/24
+        tags:
+          karpenter.sh/discovery: demo-cluster
     route_tables:
       - access: public
         route_table_assocations:
@@ -112,7 +145,7 @@ vpc:
             target_resource: nat_gateway
             az: a
     security_groups:
-      - name: demo
+      - name: alb-sg
         ingress_rules:
           http:
             ingress_from_port: 80
