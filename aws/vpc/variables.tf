@@ -12,7 +12,7 @@ variable "config" {
       cidr_block = string
       az         = string
       access     = string
-      tags       = optional(map(string))
+      tags       = optional(map(string),{})
     }))
     route_tables = list(object({
       access = string

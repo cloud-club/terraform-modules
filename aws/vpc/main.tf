@@ -30,12 +30,12 @@ resource "aws_subnet" "this" {
     cidr_block = subnet.cidr_block
     az         = subnet.az
     access     = subnet.access
-    tags       = subnet.tags
+    tags       = merge(var.config.tags, subnet.tags)
   } }
   vpc_id            = aws_vpc.this.id
   cidr_block        = each.value.cidr_block
   availability_zone = "${var.config.region}${each.value.az}"
-  tags              = merge(var.config.tags, {
+  tags              = merge(each.value.tags, {
     Name      = "${var.config.name}-${each.value.access}-${each.value.az}" 
   })
 }
